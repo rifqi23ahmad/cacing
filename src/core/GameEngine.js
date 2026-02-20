@@ -50,6 +50,11 @@ export class GameEngine {
         this.running = false;
         this.startTime = now();
 
+        // Audio
+        this.bgm = new Audio(CONSTANTS.BGM_URL);
+        this.bgm.loop = true;
+        this.bgm.volume = 0.4;
+
         // World data
         this.world = new WorldState();
         this.aha = null;
@@ -223,18 +228,24 @@ export class GameEngine {
     // ── MAIN LOOP ──────────────────────────────────────────────
     start() {
         this.running = true;
-        this._loop();
+        this.loop();
     }
 
-    _loop() {
+    stop() {
+        this.running = false;
+        this.bgm.pause();
+    }
+
+    loop() {
         if (!this.running) return;
-        this._update();
-        this._draw();
-        requestAnimationFrame(() => this._loop());
+        if (this.bgm.paused) this.bgm.play().catch(() => { });
+        this.update();
+        this.draw();
+        requestAnimationFrame(() => this.loop());
     }
 
     // ── UPDATE ─────────────────────────────────────────────────
-    _update() {
+    update() {
         this.world.totalRuntime = now() - this.startTime;
 
         // Food spawn
@@ -452,7 +463,7 @@ export class GameEngine {
     }
 
     // ── DRAW ───────────────────────────────────────────────────
-    _draw() {
+    draw() {
         const ctx = this.ctx;
         const W = WORLD.width, H = WORLD.height;
         ctx.clearRect(0, 0, W, H);

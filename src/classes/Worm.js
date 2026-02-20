@@ -394,10 +394,14 @@ export class Worm {
                         // ROCK BROKE! Spawn physical ores on the ground.
                         result.drops.forEach(drop => {
                             const angle = Math.random() * Math.PI * 2;
-                            const r = Math.random() * 20;
+                            const distFromCenter = Math.random() * 15;
+                            // Add velocity so they bounce out (terpental)
+                            const speed = 2 + Math.random() * 3;
                             world.ores.push({
-                                x: this.miningTarget.x + Math.cos(angle) * r,
-                                y: this.miningTarget.y + Math.sin(angle) * r,
+                                x: this.miningTarget.x + Math.cos(angle) * distFromCenter,
+                                y: this.miningTarget.y + Math.sin(angle) * distFromCenter,
+                                vx: Math.cos(angle) * speed,
+                                vy: Math.sin(angle) * speed - 2, // slight upward pop
                                 type: drop.type,
                                 born: Date.now(),
                                 alive: true
@@ -649,6 +653,7 @@ export class Worm {
         if (!this.target) return;
         const head = this.getHead();
         const angle = angleTo(head.x, head.y, this.target.x, this.target.y);
+        head.angle = angle; // Store for drawing mouth items
         let spd = this.genetics.speed * this.speedMultiplier;
         if (this.state === CONSTANTS.STATES.RESTING) spd *= 0.3;
         if (this.state === CONSTANTS.STATES.FLEEING) spd *= 1.5;
@@ -717,14 +722,14 @@ export class Worm {
         // Render carried item in the mouth (realistically)
         if (this.role === 'male' && (this.oreGreen > 0 || this.oreBlack > 0)) {
             ctx.save();
-            // Position the "ball" slightly in front of the head
-            const angle = head.angle; // direction worm is facing
-            const mouthX = head.x + Math.cos(angle) * 8;
-            const mouthY = head.y + Math.sin(angle) * 8;
+            const angle = head.angle || 0;
+            const dist = sz * 0.6; // Scale with growth!
+            const mouthX = head.x + Math.cos(angle) * dist;
+            const mouthY = head.y + Math.sin(angle) * dist;
 
             // Draw the "mouth ball"
             ctx.beginPath();
-            ctx.arc(mouthX, mouthY, 5, 0, Math.PI * 2);
+            ctx.arc(mouthX, mouthY, sz * 0.35, 0, Math.PI * 2);
             ctx.fillStyle = this.oreBlack > 0 ? '#FF8F00' : '#81C784';
             ctx.fill();
             ctx.strokeStyle = 'rgba(255,255,255,0.4)';

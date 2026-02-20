@@ -300,7 +300,21 @@ export class GameEngine {
         // Rock respawn check
         this.rocks.forEach(r => { if (r instanceof Rock) r.checkRespawn(); });
 
-        // Ore ground items — auto-expire after 30s
+        // Ore ground items — physics and auto-expire
+        this.ores.forEach(o => {
+            if (o.vx !== undefined) {
+                o.x += o.vx;
+                o.y += o.vy;
+                o.vy += 0.15; // Gravity
+                o.vx *= 0.95; // Friction
+                o.vy *= 0.95;
+                // Floor bounce
+                if (o.y > WORLD.height - 10) {
+                    o.y = WORLD.height - 10;
+                    o.vy *= -0.5;
+                }
+            }
+        });
         this.ores = this.ores.filter(o => o.alive !== false && (Date.now() - o.born < 30000));
 
         // Eggs
@@ -474,11 +488,13 @@ export class GameEngine {
         this._drawMushrooms(ctx);
         this._drawFoods(ctx);
         this._drawRocks(ctx);
-        this._drawEggs(ctx);
+        this.drawEggs();
         this._drawWaterDroplets(ctx);
-        this._drawMainWorms(ctx);
-        this._drawPredators(ctx);
-        this._drawParticles(ctx);
+        this.drawMainWorms();
+        this.drawPredators();
+        this.drawOres();
+        this.drawParticles();
+        this.drawOffspring();
         this._drawPlant(ctx);
         this._drawRain(ctx);
         this._drawHUD(ctx, W, H);
@@ -938,19 +954,41 @@ export class GameEngine {
         this.waterDroplets.forEach(d => d.draw(ctx));
     }
 
-    _drawOffspring(ctx) {
+    drawOffspring() {
         this.allWorms
             .filter(w => w.alive && w.role === 'offspring')
-            .forEach(w => w.draw(ctx));
+            .forEach(w => w.draw(this.ctx));
     }
 
-    _drawMainWorms(ctx) {
-        if (this.tika?.alive) this.tika.draw(ctx);
-        if (this.aha?.alive) this.aha.draw(ctx);
+    drawMainWorms() {
+        if (this.tika?.alive) this.tika.draw(this.ctx);
+        if (this.aha?.alive) this.aha.draw(this.ctx);
     }
 
-    _drawPredators(ctx) { this.predators.forEach(p => p.draw(ctx)); }
+    drawPredators() { this.predators.forEach(p => p.draw(this.ctx)); }
 
+    drawOres() {
+        const ctx = this.ctx;
+        this.ores.forEach(o => {
+            ctx.save();
+            ctx.fillStyle = o.type === 'black' ? '#FF8F00' : '#81C784';
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(o.x, o.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            // Shine
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.arc(o.x - 1, o.y - 1, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
+    }
+
+    drawEggs() { this.eggs.forEach(e => e.draw(this.ctx)); }
+    drawParticles() { this.particles.forEach(p => p.draw(this.ctx)); }
     _drawRain(ctx) {
         if (this.world.weather !== 'RAINY') return;
         ctx.save();

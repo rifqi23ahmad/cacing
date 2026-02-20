@@ -62,6 +62,10 @@ export const CONSTANTS = {
     ERA_MUTATION_INTERVAL: 30 * 60 * 1000,
     GOLDEN_WORM_THRESHOLD: 24 * 60 * 60 * 1000,
 
+    // --- Water Management ---
+    WATER_DROPLET_CAP: 40,           // max droplets on screen
+    WATER_DROPLET_LIFETIME: 60000,   // ms before droplet dries up
+
     // --- Roles ---
     ROLES: { MALE: 'male', FEMALE: 'female', OFFSPRING: 'offspring' },
 

@@ -255,11 +255,18 @@ export class GameEngine {
         // Food cleanup
         this.foods = this.foods.filter(f => f.alive).slice(-150);
 
-        // Water droplets
-        if (this.world.weather === 'RAINY' && Math.random() < 0.1) {
+        // Water droplets management (for plant)
+        if (this.world.weather === 'RAINY' &&
+            this.waterDroplets.length < CONSTANTS.WATER_DROPLET_CAP &&
+            Math.random() < 0.1) {
             this.waterDroplets.push(new WaterDroplet(random(0, WORLD.width), random(WORLD.topEnd, WORLD.midEnd)));
         }
-        this.waterDroplets = this.waterDroplets.filter(d => d.alive);
+
+        // Auto-expire (dry up) droplets after a while
+        const nowMs = Date.now();
+        this.waterDroplets = this.waterDroplets.filter(d =>
+            d.alive && (nowMs - d.born < CONSTANTS.WATER_DROPLET_LIFETIME)
+        );
 
         // Update worms
         const worldRef = {

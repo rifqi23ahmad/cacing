@@ -29,10 +29,12 @@ export const CONSTANTS = {
 
     // --- Mining ---
     MINE_HIT_DAMAGE: 10,       // Aha deals this per swing
-    MINE_HIT_COOLDOWN: 900,    // ms between swings
-    ORE_PER_ROCK: 3,           // ore loot per rock death
-    ORE_CARRY_CAP: 1,          // max ore Aha carries per trip (mouth carrying)
-    ROCK_RESPAWN_TIME: 15000,  // ms before rock respawns in mine
+    MINE_HIT_COOLDOWN: 1200,   // increased slightly for head-bang animation
+    MIN_DROPS: 3,              // min ores per rock
+    MAX_DROPS: 10,             // max ores per rock
+    ORE_CARRY_CAP: 1,          // mouth carrying
+    ROCK_RESPAWN_TIME: 15000,
+    GROW_MULTIPLIER: 2.5,     // how much larger the worm becomes
 
     // --- Kitchen ---
     COOK_DURATION: 8000,             // ms Tika spends cooking one meal
@@ -94,6 +96,9 @@ export const CONSTANTS = {
 
     // --- Mutation trait pool ---
     TRAITS: ['FAST', 'BULKY', 'KEEN_SENSES', 'DIGGER', 'AGILE', 'FERTILE', 'HARDY'],
+
+    // --- Audio ---
+    BGM_URL: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3', // Placeholder funny song
 };
 
 // Computed from canvas at runtime – populated inside GameEngine.setup()

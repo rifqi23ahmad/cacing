@@ -57,17 +57,18 @@ export class Rock {
             this.alive = false;
             this.respawnAt = Date.now() + CONSTANTS.ROCK_RESPAWN_TIME;
 
-            // Define multi-drop rewards
+            // Define multi-drop rewards: 3 to 10 ores
+            const numDrops = Math.floor(random(CONSTANTS.MIN_DROPS, CONSTANTS.MAX_DROPS + 1));
             let drops = [];
-            if (this.tier === 'large') {
-                drops = [
-                    { type: 'black' }, { type: 'black' }, { type: 'black' },
-                    { type: 'green' }, { type: 'green' }
-                ];
-            } else if (this.tier === 'medium') {
-                drops = [{ type: 'green' }, { type: 'green' }, { type: 'green' }];
-            } else {
-                drops = [{ type: 'green' }];
+            for (let i = 0; i < numDrops; i++) {
+                // Mix of colors: Large rocks mostly black, medium/small mostly green
+                let dropType = 'green';
+                if (this.tier === 'large') {
+                    dropType = Math.random() < 0.7 ? 'black' : 'green';
+                } else {
+                    dropType = Math.random() < 0.3 ? 'black' : 'green';
+                }
+                drops.push({ type: dropType });
             }
 
             // Big burst particles on death

@@ -56,9 +56,8 @@ export class Worm {
         this._hungerDrain = CONSTANTS.HUNGER_DRAIN;
         this._energyDrain = CONSTANTS.ENERGY_DRAIN;
 
-        // Fighting / jealousy
-        this.lastFightTime = 0;
-        this.rivalTarget = null;
+        // Fighting / jealousy (Logic removed as per request)
+        this.sizeMultiplier = 1.0;
 
         // Economy — Aha's work cycle
         this.oreGreen = 0;         // green ore (med/small rocks) in backpack
@@ -186,7 +185,7 @@ export class Worm {
             return;
         }
 
-        // ③ Role-specific AI — each character has their own logic tree
+        // ③ Role-specific AI
         if (this.role === 'male') this._decideMale(world);
         else if (this.role === 'female') this._decideFemale(world);
         else this._decideOffspring(world);
@@ -226,14 +225,20 @@ export class Worm {
             return;
         }
 
-        // Occasionally visit market for vegetables (0.3% chance when idle)
+        // Foraging for mushrooms/orbs (Aha's new primary diet)
+        if (this.hunger < 50) {
+            this.state = FORAGING;
+            return;
+        }
+
+        // Occasionally visit market for vegetables
         if (this.state === IDLE && Math.random() < 0.003 && (this.oreGreen >= CONSTANTS.MARKET_VEGETABLE_COST)) {
             this.state = SHOPPING;
             return;
         }
 
         // Default work loop: mine rocks
-        if (this.state === IDLE || this.state === FORAGING) {
+        if (this.state === IDLE) {
             this.state = MINING;
         }
     }
@@ -252,28 +257,6 @@ export class Worm {
 
         // Rest when tired
         if (this.energy < 35) { this.state = RESTING; return; }
-
-        // 😤 Jealousy — chase rival males entering her zone
-        if (world.allWorms) {
-            const [hx, hy] = this._headXY();
-            const rival = world.allWorms.find(w =>
-                w !== this &&
-                w !== this.partner &&
-                w.alive &&
-                w.role !== 'female' &&
-                dist(hx, hy, w.getHead().x, w.getHead().y) < CONSTANTS.JEALOUSY_RANGE
-            );
-            if (rival) {
-                this.rivalTarget = rival;
-                this.state = FIGHTING;
-                return;
-            }
-        }
-        // Clear rival if no longer relevant
-        if (this.state === FIGHTING && (!this.rivalTarget?.alive)) {
-            this.rivalTarget = null;
-            this.state = IDLE;
-        }
 
         // 🍳 Cook if there's BOTH green AND black ore in the kitchen
         if (world.world &&
@@ -321,8 +304,22 @@ export class Worm {
 
             // ── FORAGING: find & eat food ──────────────────────────
             case FORAGING: {
-                // Priority 1: Check Kitchen Dining Table
+                // Priority 1: Check Kitchen Dining Table for Golden Balls
                 const kitchen = world.zones?.kitchen;
+                if (kitchen && world.world.kitchenGoldenBalls > 0) {
+                    this.target = { x: kitchen.x + 75, y: kitchen.y + 15 };
+                    if (dist(head.x, head.y, this.target.x, this.target.y) < 15) {
+                        world.world.kitchenGoldenBalls--;
+                        this.hunger = Math.min(100, this.hunger + 100);
+                        this.sizeMultiplier += 0.5; // GROW!
+                        this.target = null;
+                        this.state = IDLE;
+                        if (world._onEvent) world._onEvent('EAT', `🌟 ${this.name} memakan BOLA EMAS dan menjadi BESAR!`);
+                    }
+                    break;
+                }
+
+                // Priority 2: Check Kitchen Dining Table for regular meals
                 if (kitchen && world.world.kitchenFood > 0) {
                     this.target = { x: kitchen.x + 75, y: kitchen.y + 15 }; // Dining Table position
                     if (dist(head.x, head.y, this.target.x, this.target.y) < 15) {
@@ -377,6 +374,16 @@ export class Worm {
                 // Walk toward rock
                 this.target = { x: this.miningTarget.x, y: this.miningTarget.y };
                 const dRock = dist(head.x, head.y, this.miningTarget.x, this.miningTarget.y);
+
+                // Head banging animation logic
+                const isMining = dRock < this.miningTarget.radius + 25;
+                if (isMining) {
+                    // Lunge head toward rock funny way
+                    const angleToRock = angleTo(head.x, head.y, this.miningTarget.x, this.miningTarget.y);
+                    const lunge = Math.sin(now() * 0.015) * 15;
+                    head.x += Math.cos(angleToRock) * lunge;
+                    head.y += Math.sin(angleToRock) * lunge;
+                }
 
                 // Swing when close enough
                 if (dRock < this.miningTarget.radius + 18 &&
@@ -497,11 +504,11 @@ export class Worm {
                     if (progress >= 1) {
                         world.world.kitchenGreenOre -= CONSTANTS.COOK_GREEN_ORE_COST;
                         world.world.kitchenBlackOre -= CONSTANTS.COOK_BLACK_ORE_COST;
-                        world.world.kitchenFood++;
+                        world.world.kitchenGoldenBalls++; // Produce Golden Ball
                         this.cookStartTime = null;
                         this.cookProgress = 0;
                         this.state = IDLE;
-                        if (world._onEvent) world._onEvent('COOK', '🍳 Tika selesai masak! Makanan siap di meja.');
+                        if (world._onEvent) world._onEvent('COOK', '🧙‍♀️ Tika memasak BOLA EMAS! Ukuran tubuh bisa berubah!');
                     }
                 } else {
                     this.cookStartTime = null;
@@ -651,7 +658,7 @@ export class Worm {
     }
 
     _syncSegments() {
-        const spacing = this.genetics.size * 0.6;
+        const spacing = this.genetics.size * 0.6 * this.sizeMultiplier;
         for (let i = 1; i < this.segments.length; i++) {
             const leader = this.segments[i - 1];
             const follower = this.segments[i];
@@ -667,7 +674,7 @@ export class Worm {
     draw(ctx) {
         if (!this.alive) return;
         const head = this.getHead();
-        const sz = this.genetics.size;
+        const sz = this.genetics.size * this.sizeMultiplier;
 
         // Draw segments
         for (let i = this.segments.length - 1; i >= 0; i--) {

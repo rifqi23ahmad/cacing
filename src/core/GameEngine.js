@@ -830,6 +830,26 @@ export class GameEngine {
             ctx.beginPath(); ctx.arc(mx, my - 1, 2.5, 0, Math.PI * 2); ctx.fill();
         }
 
+        // Draw Golden Balls
+        for (let i = 0; i < this.world.kitchenGoldenBalls; i++) {
+            const mx = dinX - 18 + ((i + this.world.kitchenFood) % 5) * 9;
+            const my = dinY - 4 - Math.floor((i + this.world.kitchenFood) / 5) * 3;
+
+            // Outer glow
+            const grad = ctx.createRadialGradient(mx, my, 1, mx, my, 6);
+            grad.addColorStop(0, '#FFF59D');
+            grad.addColorStop(1, 'rgba(255, 215, 0, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(mx, my, 6, 0, Math.PI * 2); ctx.fill();
+
+            // Core ball
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath(); ctx.arc(mx, my, 3.5, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#FBC02D';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+        }
+
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
         ctx.font = 'bold 10px Inter';
         ctx.textAlign = 'center';

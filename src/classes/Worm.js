@@ -239,7 +239,13 @@ export class Worm {
 
         // Default work loop: mine rocks
         if (this.state === IDLE) {
-            this.state = MINING;
+            // Priority: Pickup ore if nearby, otherwise mine
+            const nearbyOre = (world.ores || []).find(o => o.alive && dist(...this._headXY(), o.x, o.y) < 250);
+            if (nearbyOre) {
+                this.state = PICKUP;
+            } else {
+                this.state = MINING;
+            }
         }
     }
 
@@ -395,13 +401,13 @@ export class Worm {
                         result.drops.forEach(drop => {
                             const angle = Math.random() * Math.PI * 2;
                             const distFromCenter = Math.random() * 15;
-                            // Add velocity so they bounce out (terpental)
-                            const speed = 2 + Math.random() * 3;
+                            const speed = 1.5 + Math.random() * 2;
                             world.ores.push({
                                 x: this.miningTarget.x + Math.cos(angle) * distFromCenter,
                                 y: this.miningTarget.y + Math.sin(angle) * distFromCenter,
                                 vx: Math.cos(angle) * speed,
-                                vy: Math.sin(angle) * speed - 2, // slight upward pop
+                                vy: -2 - Math.random() * 2, // pop up
+                                floorY: this.miningTarget.y + 15 + Math.random() * 15, // stay close!
                                 type: drop.type,
                                 born: Date.now(),
                                 alive: true
@@ -438,15 +444,36 @@ export class Worm {
                         if (nearest.type === 'black') this.oreBlack++;
                         else this.oreGreen++;
 
-                        nearest.alive = false; // "Pick it up"
+                        nearest.alive = false;
                         this.target = null;
-                        this.state = DELIVERING;
+
+                        // Check if still have capacity and more ores nearby
+                        if (this.oreGreen + this.oreBlack < CONSTANTS.ORE_CARRY_CAP) {
+                            const stillOres = (world.ores || []).some(o => o.alive && dist(head.x, head.y, o.x, o.y) < 200);
+                            if (!stillOres) this.state = DELIVERING;
+                            // otherwise stay in PICKUP
+                        } else {
+                            this.state = DELIVERING;
+                        }
+
                         if (world._onEvent) world._onEvent('PICKUP', `💎 Aha memungut biji ${nearest.type === 'black' ? 'hitam ⚫' : 'hijau 🟢'}`);
                     }
                 } else {
-                    // No ore on ground? Go back to mining or IDLE
+                    // No ore on ground? 
                     this.target = null;
-                    this.state = MINING;
+                    if (this.oreGreen + this.oreBlack > 0) this.state = DELIVERING;
+                    else this.state = IDLE;
+                }
+                break;
+            }
+
+            case IDLE: {
+                // Simple wander behavior to prevent "stuck" look
+                if (!this.target || dist(head.x, head.y, this.target.x, this.target.y) < 20) {
+                    this.target = {
+                        x: head.x + (Math.random() - 0.5) * 100,
+                        y: head.y + (Math.random() - 0.5) * 100
+                    };
                 }
                 break;
             }

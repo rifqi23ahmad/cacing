@@ -27,6 +27,9 @@ export class GameEngine {
         this.worldManager = new WorldManager(this);
         this.renderer = new Renderer(this);
 
+        // Compatibility for Worm logic
+        this.zones = ZONES;
+
         // Entity Lists
         this.aha = null;
         this.tika = null;
@@ -139,9 +142,19 @@ export class GameEngine {
         this.rocks.forEach(r => r.checkRespawn());
         this.ores.forEach(o => {
             if (o.vx !== undefined) {
-                o.x += o.vx; o.y += o.vy;
-                o.vy += 0.15; o.vx *= 0.95; o.vy *= 0.95;
-                if (o.y > WORLD.height - 10) { o.y = WORLD.height - 10; o.vy *= -0.5; }
+                o.x += o.vx;
+                o.y += o.vy;
+                o.vy += 0.2; // gravity
+                o.vx *= 0.95;
+                o.vy *= 0.95;
+
+                // Simulated ground settlement
+                if (o.y > (o.floorY || WORLD.height - 10)) {
+                    o.y = (o.floorY || WORLD.height - 10);
+                    o.vy *= -0.3; // low bounce
+                    if (Math.abs(o.vy) < 0.5) o.vy = 0;
+                    if (Math.abs(o.vx) < 0.1) o.vx = 0;
+                }
             }
         });
         this.ores = this.ores.filter(o => o.alive !== false && (Date.now() - o.born < 30000));

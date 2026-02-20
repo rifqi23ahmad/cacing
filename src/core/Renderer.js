@@ -75,9 +75,7 @@ export class Renderer {
         ctx.fillStyle = townGrad;
         ctx.fillRect(0, T, W, M - T);
 
-        // Grass
-        ctx.fillStyle = '#66BB6A';
-        ctx.fillRect(0, T, W, 10);
+        // Grass removed
     }
 
     drawZones() {

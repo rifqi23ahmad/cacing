@@ -104,7 +104,7 @@ export class GameEngine {
         this.foods.push({
             x: random(50, WORLD.width - 50),
             y: random(WORLD.topEnd + 20, WORLD.height - 20),
-            draw: (ctx) => {
+            draw: function (ctx) {
                 ctx.fillStyle = '#81C784';
                 ctx.beginPath(); ctx.arc(this.x, this.y, 3, 0, Math.PI * 2); ctx.fill();
             }
@@ -135,7 +135,7 @@ export class GameEngine {
         // Basic Updates
         if (Math.random() < 0.05) this._spawnFood();
 
-        this.allWorms.forEach(w => w.update(this.allWorms, this.ores));
+        this.allWorms.forEach(w => w.update(this));
         this.rocks.forEach(r => r.checkRespawn());
         this.ores.forEach(o => {
             if (o.vx !== undefined) {
